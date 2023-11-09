@@ -1,8 +1,12 @@
 - Installation
     pip install fastapi
     pip install "uvicorn[standard]"
+    pip install firebase
+    pip install firebase-admin
+    pip install Pyrebase4
 
 - Run the server with
+    python main.py
     uvicorn main:app --reload
     
 - Docs
