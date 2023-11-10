@@ -2,10 +2,13 @@ from fastapi import FastAPI
 from typing import Union
 from pydantic import BaseModel
 import firebase_admin
-from firebase_admin import credentials
+from firebase_admin import credentials, auth
 import random
 import uvicorn
 import pyrebase
+from models.model import SignUpSchema, SignInSchema
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
 
 app = FastAPI(
     description="IOT Parking API",
@@ -63,11 +66,25 @@ def save_item(item_id: int, item: Item):
 
     
 @app.post('/signup')
-async def signup():
-    pass
+async def signup(user_data:SignUpSchema):
+    email = user_data.email
+    password = user_data.password
+
+    try:
+        user = auth.create_user(
+            email= email,
+            password= password
+        )
+
+        return JSONResponse(content={"message": f"User created successfully. {user.uid}"}, status_code=201)
+    except auth.EmailAlreadyExistsError:
+        raise HTTPException(
+            status_code=400,
+            detail= f"Email already exists. {email}"
+        )
 
 @app.post('/signin')
-async def signin():
+async def signin(user_data: SignInSchema):
     pass
 
 @app.post('/ping')
