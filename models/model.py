@@ -19,7 +19,7 @@ class SignInSchema(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "email": "example@example.com",
+                "email": "example@2example.com",
                 "password": "example1222222"
             }
         }
