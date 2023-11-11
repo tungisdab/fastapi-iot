@@ -23,3 +23,7 @@ class SignInSchema(BaseModel):
                 "password": "example1222222"
             }
         }
+
+class update_parking_space(BaseModel):
+    space_id: str
+    is_occupied: bool

@@ -10,6 +10,7 @@ from models.model import SignUpSchema, SignInSchema
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from fastapi.requests import Request
+from firebase_admin import initialize_app, db
 
 app = FastAPI(
     description="IOT Parking API",
@@ -20,7 +21,8 @@ app = FastAPI(
 
 if not firebase_admin._apps:
     cred = credentials.Certificate("serviceAccountKey.json")
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {"databaseURL": "https://iot-fastapi-default-rtdb.asia-southeast1.firebasedatabase.app/"})
+
 
 firebaseConfig = {
   "apiKey": "AIzaSyAoDLudOKMMhHwkqFzwvvvFtw0-RJO1ghE",
@@ -30,7 +32,7 @@ firebaseConfig = {
   "messagingSenderId": "923373532569",
   "appId": "1:923373532569:web:9e6381b5f5b95fec530f08",
   "measurementId": "G-3XFKEW63HW",
-  "databaseURL": ""
+  "databaseURL": "https://iot-fastapi-default-rtdb.asia-southeast1.firebasedatabase.app/"
 };
 
 firebase = pyrebase.initialize_app(firebaseConfig)
@@ -45,6 +47,18 @@ class Item(BaseModel):
 # @app.get('/')
 # async def root():
 #     return {'example': 'This is an example', 'data': 999}
+
+@app.post("/update_parking_space")
+async def update_parking_space(space_id: str, is_occupied: bool):
+    try:
+        # Cập nhật trạng thái vị trí đỗ xe lên Firebase
+        ref = db.reference('/parking_spaces')
+        ref.child(space_id).set(is_occupied)
+
+        return {"message": f"Đã cập nhật trạng thái của vị trí {space_id} thành {is_occupied}."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi khi cập nhật vị trí: {str(e)}")
+
 
 @app.get('/random')
 async def get_random():
