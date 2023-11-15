@@ -3,14 +3,15 @@ from typing import Union
 from pydantic import BaseModel
 import firebase_admin
 from firebase_admin import credentials, auth
-import random
 import uvicorn
 import pyrebase
 from models.model import SignUpSchema, SignInSchema
+from models.user_model import ParkingEntry
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 from fastapi.requests import Request
 from firebase_admin import initialize_app, db
+from datetime import datetime
 
 app = FastAPI(
     description="IOT Parking API",
@@ -38,7 +39,6 @@ firebaseConfig = {
 firebase = pyrebase.initialize_app(firebaseConfig)
 
 
-
 class Item(BaseModel):
     name: str
     price: float
@@ -47,6 +47,8 @@ class Item(BaseModel):
 # @app.get('/')
 # async def root():
 #     return {'example': 'This is an example', 'data': 999}
+
+
 
 @app.post("/update_parking_space")
 async def update_parking_space(space_id: str, is_occupied: bool):
@@ -58,28 +60,80 @@ async def update_parking_space(space_id: str, is_occupied: bool):
         return {"message": f"Đã cập nhật trạng thái của vị trí {space_id} thành {is_occupied}."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lỗi khi cập nhật vị trí: {str(e)}")
-
-
-@app.get('/random')
-async def get_random():
-    return {'number': random.randint(0, 100), 'limit': 100}
-
-@app.get('/random/{limit}')
-async def get_random(limit: int):
-    return {'number': random.randint(0, limit), 'limit': limit}
-
-# http://127.0.0.1:8000/items/53?q=khanh
-@app.get('/items/{item_id}')
-def get_items(item_id: int, q: Union[str, None] = None):
-    return {'item_id': item_id, 'q': q}
-
-# http://127.0.0.1:8000/items/55?name=khanh&price=33
-@app.put("/items/{item_id}")
-def save_item(item_id: int, item: Item):
-    return {'item_name': item.pr, "item_id": item_id}
-
-
     
+def get_parking_space_status(space_id: str):
+    try:
+        # Truy vấn trạng thái vị trí đỗ xe từ Realtime Database
+        ref = db.reference(f'/parking_spaces/{space_id}')
+        space_status = ref.get()
+        return space_status
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting parking space status: {str(e)}")
+
+@app.get("/get_parking_space_status/{space_id}")
+async def get_parking_space(space_id: str):
+    try:
+        # Gọi hàm để lấy trạng thái vị trí đỗ xe
+        space_status = get_parking_space_status(space_id)
+        return space_status
+    except HTTPException as e:
+        return e
+    
+
+@app.post("/add_user")
+async def add_user(user_id: str, user_name: str, email: str, phone_number: str):
+    try:
+        # Thêm thông tin người dùng vào Firebase
+        ref = db.reference('/users')
+        ref.child(user_id).set({
+            "user_name": user_name,
+            "email": email,
+            "phone_number": phone_number,
+        })
+
+        return {"message": "User added successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding user: {str(e)}")
+    
+@app.get("/get_user/{user_id}")
+async def get_user(user_id: str):
+    try:
+        # Truy vấn thông tin người dùng từ Firebase
+        ref = db.reference(f'/users/{user_id}')
+        user = ref.get()
+        if user:
+            return user
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting user: {str(e)}")
+
+@app.post("/add_parking_entry/{user_id}/{vehicle_id}")
+async def add_parking_entry(
+    user_id: str,
+    vehicle_id: str,
+    parking_entry: ParkingEntry,
+    is_parked: bool 
+):
+
+    try:
+        # Thêm thời gian ra vào vào Firebase
+        ref = db.reference(f'/users/{user_id}/vehicles/{vehicle_id}/parking_entries')
+        new_entry_ref = ref.push()
+        new_entry_ref.set({
+            "entry_time": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+            "is_parked": ParkingEntry.is_parked
+        })
+
+        return {"message": "Parking entry added successfully"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding parking entry: {str(e)}")
+
+
 @app.post('/signup')
 async def signup(user_data:SignUpSchema):
     email = user_data.email

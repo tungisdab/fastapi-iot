@@ -26,3 +26,21 @@ print(test_validate_endpoint())
 #  "email_verified":false,
 #  "firebase":{"identities":{"email":["example@2example.com"]},"sign_in_provider":"password"},
 #  "uid":"63lEEKEA7hamoHjhBPmJO5jk1Xo1"}
+
+# @app.get('/random')
+# async def get_random():
+#     return {'number': random.randint(0, 100), 'limit': 100}
+
+# @app.get('/random/{limit}')
+# async def get_random(limit: int):
+#     return {'number': random.randint(0, limit), 'limit': limit}
+
+# # http://127.0.0.1:8000/items/53?q=khanh
+# @app.get('/items/{item_id}')
+# def get_items(item_id: int, q: Union[str, None] = None):
+#     return {'item_id': item_id, 'q': q}
+
+# # http://127.0.0.1:8000/items/55?name=khanh&price=33
+# @app.put("/items/{item_id}")
+# def save_item(item_id: int, item: Item):
+#     return {'item_name': item.pr, "item_id": item_id}
